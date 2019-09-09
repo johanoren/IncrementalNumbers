@@ -1,7 +1,7 @@
 #Author-Johan Norén
 #Description-Create list of incremental numbers.
 
-import adsk.core, adsk.fusion, traceback
+import adsk.core, adsk.fusion, traceback # pylint: disable=import-error
 
 import os
 import sys
@@ -9,7 +9,7 @@ fontToolPath = os.path.dirname(os.path.realpath(__file__))
 fontToolPath = fontToolPath + "/FontTools"
 if not fontToolPath in sys.path:
     sys.path.append(fontToolPath)
-from fontTools import ttLib
+from fontTools import ttLib # pylint: disable=import-error
 
 _app = None
 _ui  = None
@@ -68,9 +68,10 @@ class IncrementalNumbersInputChangedHandler(adsk.core.InputChangedEventHandler):
         super().__init__()
     def notify(self,args):
         try:
-            eventArgs= adsk.core.InputChangedEventArgs.cast(args)
-            inputs = eventArgs.inputs
-            cmdInput = eventArgs.input
+            pass
+            # eventArgs= adsk.core.InputChangedEventArgs.cast(args)
+            # inputs = eventArgs.inputs
+            # cmdInput = eventArgs.input
             
         except:
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -101,14 +102,14 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
                     numSpacingInput = inputI
                 elif inputI.id == 'numHeight':
                     numHeightInput = inputI
-                elif inputI.id == 'sketchInput':
-                    sketchInput = inputI
                 elif inputI.id == 'pointInput':
                     pointInput = inputI
                 elif inputI.id == 'intPrecision':
                     intPrecisionInput = inputI
-                elif inputI.id == 'boolCenter':
-                    boolCenterInput = inputI
+                elif inputI.id == 'boolCenterX':
+                    boolCenterXInput = inputI
+                elif inputI.id == 'boolCenterY':
+                    boolCenterYInput = inputI
                 elif inputI.id == 'radioDirection':
                     radioDirection = inputI         
                 elif inputI.id == 'numAngle':
@@ -126,7 +127,8 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
             numSpacing = numSpacingInput.value
             numHeight = numHeightInput.value
             intPrecision = intPrecisionInput.value
-            boolCenter = boolCenterInput.value
+            boolCenterX = boolCenterXInput.value
+            boolCenterY = boolCenterYInput.value
             radioDirectionSelect = radioDirection.selectedItem.name
             numAngle = numAngleInput.value            
             dropFont = dropFontInput.selectedItem.name
@@ -134,41 +136,49 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
             strSufix = strSufixInput.value
             
             pointSelect = pointInput.selection(0)
-            sketchPoint = pointSelect.entity
-            outPoint = sketchPoint.geometry            
+            sketchPointEnt = pointSelect.entity
+            sketchPoint = sketchPointEnt.geometry           
             
-            sketch = sketchPoint.parentSketch
+            sketch = sketchPointEnt.parentSketch
             sketchTexts = sketch.sketchTexts
-
-            # Do the rest                   
+            sketchPoints = sketch.sketchPoints
+            
+            outPointEnt = sketchPoints.add(sketchPoint)
+            outPoint = outPointEnt.geometry            
+                   
             for unused in range(numInstances):
                 del unused
                 outStr = '%.*f' % (intPrecision,outNum)                
 
-                # Print the text                    
-                sketchTextInput = sketchTexts.createInput(strPrefix + outStr  + strSufix,numHeight,outPoint)                
+                # Print the text with a slight offset to not get any automatic constraints                 
+                
+                offsPoint = outPoint.copy()
+                offsPoint.x = offsPoint.x + 10
+                sketchTextInput = sketchTexts.createInput(strPrefix + outStr  + strSufix,numHeight,offsPoint)                
                 sketchTextInput.angle = numAngle
                 sketchTextInput.fontName = dropFont
                 sketchText = sketchTexts.add(sketchTextInput)
-                            
-                if boolCenter == True:
+                sketchText.position = outPoint
+
+                if boolCenterX == True or boolCenterY == True:
                     # Get the width of the newly created text
                     boundingBox = sketchText.boundingBox
                     pMax = boundingBox.maxPoint
                     pMin = boundingBox.minPoint
-                    boxWidth = pMax.x - pMin.x
-                    boxHeight = pMax.y - pMin.y                
+                    boxCenterX = (pMax.x + pMin.x)/2
+                    boxCenterY = (pMax.y + pMin.y)/2
+                    posDiffX = outPoint.x - boxCenterX
+                    posDiffY = outPoint.y - boxCenterY
                     
-                    newPos = sketchText.position
-                    if radioDirectionSelect == 'X':    
-                        newPos.x = newPos.x - boxWidth/2
-                    elif radioDirectionSelect == 'Y':
-                        newPos.y = newPos.y - boxHeight/2
+                    newPos = outPoint.copy()
+                    if boolCenterX == True:
+                        newPos.x = newPos.x + posDiffX
+                    if boolCenterY == True:
+                        newPos.y = newPos.y + posDiffY
                         
                     # Offset the text half the width
                     # sketchText.position.x = sketchText.position.x - boxWidth/2
                     sketchText.position = newPos
-                
                 
                 # Increment struff
                 outNum += numIncrement
@@ -214,7 +224,8 @@ class IncrementalNumbersCreatedHandler(adsk.core.CommandCreatedEventHandler):
             selectionInput = inputs.addSelectionInput('pointInput','Select point','Select point in sketch.')
             selectionInput.addSelectionFilter('SketchPoints')
             
-            inputs.addBoolValueInput('boolCenter', 'Reference center', True, '', False)            
+            inputs.addBoolValueInput('boolCenterX', 'Center X', True, '', False)
+            inputs.addBoolValueInput('boolCenterY', 'Center Y', True, '', False)
             
             # Startnumber
             inputs.addValueInput('numStart', 'First number', '', adsk.core.ValueInput.createByReal(0.0))

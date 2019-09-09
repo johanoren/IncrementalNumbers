@@ -1,0 +1,10 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"script",
+	"author":	"Johan Norén",
+	"description":	{
+		"":	"Create list of incremental numbers."
+	},
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}

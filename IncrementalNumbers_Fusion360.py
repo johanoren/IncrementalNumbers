@@ -17,7 +17,7 @@ _ui  = None
 _handlers = []
 
 ######### begin functions for Font ##################
-# from http://help.autodesk.com/view/fusion360/ENU/?caas=caas/discussion/t5/Fusion-360-API-and-Scripts/API-access-to-list-of-available-supported-fonts/td-p/8899284.html
+
 FONT_SPECIFIER_NAME_ID = 4
 FONT_SPECIFIER_FAMILY_ID = 1
 
@@ -37,7 +37,6 @@ def shortName(font,platformID):
      return name, family
 
 def getFontList(dic):
-
      app = adsk.core.Application.get()
      ui = app.userInterface
      if sys.platform.startswith('win') or sys.platform.startswith('cygwin'):
@@ -64,7 +63,7 @@ def getFontList(dic):
                 dic[font_ori_name] = source_file_name
 ####### end of functions for Font######################
 
-class NumberedListInputChangedHandler(adsk.core.InputChangedEventHandler):
+class IncrementalNumbersInputChangedHandler(adsk.core.InputChangedEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self,args):
@@ -76,7 +75,7 @@ class NumberedListInputChangedHandler(adsk.core.InputChangedEventHandler):
         except:
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-class NumberedListExecuteHandler(adsk.core.CommandEventHandler):
+class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self,args):
@@ -84,7 +83,6 @@ class NumberedListExecuteHandler(adsk.core.CommandEventHandler):
             cmd = args.firingEvent.sender
             inputs = cmd.commandInputs
             
-            sketchInput = None
             pointInput = None
             numStartInput = None
             numIncrementInput = None
@@ -141,9 +139,10 @@ class NumberedListExecuteHandler(adsk.core.CommandEventHandler):
             
             sketch = sketchPoint.parentSketch
             sketchTexts = sketch.sketchTexts
-            
+
             # Do the rest                   
-            for i in range(numInstances):
+            for unused in range(numInstances):
+                del unused
                 outStr = '%.*f' % (intPrecision,outNum)                
 
                 # Print the text                    
@@ -183,7 +182,7 @@ class NumberedListExecuteHandler(adsk.core.CommandEventHandler):
         except:
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-class NumberedListCreatedHandler(adsk.core.CommandCreatedEventHandler):
+class IncrementalNumbersCreatedHandler(adsk.core.CommandCreatedEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self,args):
@@ -192,17 +191,17 @@ class NumberedListCreatedHandler(adsk.core.CommandCreatedEventHandler):
             cmd = adsk.core.Command.cast(args.command)
             
             # Connect destroyed event handler
-            onDestroy = NumberedListDestroyHandler()
+            onDestroy = IncrementalNumbersDestroyHandler()
             cmd.destroy.add(onDestroy)
             _handlers.append(onDestroy)
 
             # Connect input changed event handler
-            onInputChanged = NumberedListInputChangedHandler()
+            onInputChanged = IncrementalNumbersInputChangedHandler()
             cmd.inputChanged.add(onInputChanged)
             _handlers.append(onInputChanged)  
             
             # Connect execute handler
-            onExecute = NumberedListExecuteHandler()
+            onExecute = IncrementalNumbersExecuteHandler()
             cmd.execute.add(onExecute)
             _handlers.append(onExecute)
             
@@ -251,7 +250,7 @@ class NumberedListCreatedHandler(adsk.core.CommandCreatedEventHandler):
             # Textproperties
             # Font
             # Create dropdown input with radio style.
-            fontDropInput = inputs.addDropDownCommandInput('dropFont', 'Font', adsk.core.DropDownStyles.LabeledIconDropDownStyle);
+            fontDropInput = inputs.addDropDownCommandInput('dropFont', 'Font', adsk.core.DropDownStyles.LabeledIconDropDownStyle)
             fontDropInputItems = fontDropInput.listItems
             # dropdown3Items.add('Item 1', True, '')
             # dropdown3Items.add('Item 2', False, '')            
@@ -272,7 +271,7 @@ class NumberedListCreatedHandler(adsk.core.CommandCreatedEventHandler):
         except:
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-class NumberedListDestroyHandler(adsk.core.CommandEventHandler):
+class IncrementalNumbersDestroyHandler(adsk.core.CommandEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self,args):
@@ -287,14 +286,14 @@ def run(context):
         _app = adsk.core.Application.get()
         _ui = _app.userInterface
         
-        cmdDef = _ui.commandDefinitions.itemById('cmdNumberedList')
+        cmdDef = _ui.commandDefinitions.itemById('cmdIncrementalNumbers')
         if not cmdDef:
-            cmdDef = _ui.commandDefinitions.addButtonDefinition('cmdNumberedList', 'Command Numbered List', 'Creates a list of numbers in a new sketch.')
+            cmdDef = _ui.commandDefinitions.addButtonDefinition('cmdIncrementalNumbers', 'Incremental Number Creator', 'Creates a series of incremental numbers in a new sketch.')
     
-        onCommandCreated = NumberedListCreatedHandler()    
+        onCommandCreated = IncrementalNumbersCreatedHandler()    
         cmdDef.commandCreated.add(onCommandCreated)
         _handlers.append(onCommandCreated)
-        
+
         cmdDef.execute()    
         
         adsk.autoTerminate(False)

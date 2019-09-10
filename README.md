@@ -1,4 +1,4 @@
-# IncrementalNumbers_Fusion
+# IncrementalNumbers
 Script for creating series of incremental numbers in Autodesk Fusion 360
 
 Script is dependant on the FontTools used in SurfaceText_python.

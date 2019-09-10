@@ -119,7 +119,10 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
                 elif inputI.id == 'strPrefix':
                     strPrefixInput = inputI
                 elif inputI.id == 'strSufix':
-                    strSufixInput = inputI    
+                    strSufixInput = inputI  
+                elif inputI.id == 'textStyle':
+                    textStyleInput = inputI
+
             
             outNum = numStartInput.value
             numIncrement = numIncrementInput.value
@@ -134,7 +137,17 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
             dropFont = dropFontInput.selectedItem.name
             strPrefix = strPrefixInput.value
             strSufix = strSufixInput.value
-            
+
+            textStyle = 0
+
+            if textStyleInput.listItems.item(0).isSelected == True:
+                textStyle += 1
+            if textStyleInput.listItems.item(1).isSelected == True:
+                textStyle += 2
+            if textStyleInput.listItems.item(2).isSelected == True:
+                textStyle += 4
+
+
             pointSelect = pointInput.selection(0)
             sketchPointEnt = pointSelect.entity
             sketchPoint = sketchPointEnt.geometry           
@@ -153,10 +166,11 @@ class IncrementalNumbersExecuteHandler(adsk.core.CommandEventHandler):
                 # Print the text with a slight offset to not get any automatic constraints                 
                 
                 offsPoint = outPoint.copy()
-                offsPoint.x = offsPoint.x + 10
+                offsPoint.x = offsPoint.x + 0.0001
                 sketchTextInput = sketchTexts.createInput(strPrefix + outStr  + strSufix,numHeight,offsPoint)                
                 sketchTextInput.angle = numAngle
                 sketchTextInput.fontName = dropFont
+                sketchTextInput.textStyle = textStyle
                 sketchText = sketchTexts.add(sketchTextInput)
                 sketchText.position = outPoint
 
@@ -274,6 +288,12 @@ class IncrementalNumbersCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 else:
                     fontDropInputItems.add(font,False,'')
             
+            # Create multi selectable button row input.
+            buttonRowInput = inputs.addButtonRowCommandInput('textStyle', 'Font style', True)
+            buttonRowInput.listItems.add('boolBold', False, 'resources/bold')
+            buttonRowInput.listItems.add('boolItalic', False, 'resources/italic')
+            buttonRowInput.listItems.add('boolUnderline', False, 'resources/underline')
+
             # Size
             inputs.addValueInput('numHeight','Text height','mm',adsk.core.ValueInput.createByReal(1.20))
             
